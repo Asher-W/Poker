@@ -1,0 +1,24 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+}
+p {
+    display: inline;
+}
+#results {
+    display: none;
+}
+#action input {
+    display: block;
+}
+#action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+#buttons {
+    width:100%;
+    display: block;
+    text-align: center;
+}

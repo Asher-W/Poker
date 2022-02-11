@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker</title>
+    <link href = "{{ url_for('static', filename='main.css') }}" rel = "stylesheet">
+</head>
+<body>
+    <h5>It is player <p id = "current">1</p>'s turn</h5>
+    <hr>
+    <h5>you are player <p id = "number"></p></h5>
+    <h5>You have: <p id = "hand"></p></h5>
+    <hr>
+    <h5>Board: <p id="board"></p></h5>
+    <h5>The current bet is: <p id = "pot"></p></h5>
+    <h5>Your last bet was: <p id = "bet"></p></h5>
+    <div id = "action">
+        <input type = "number" min = "0" value="0" id = "RaiseAmount">
+        <div id = "buttons">
+            <button onclick="sendUpdate()">Raise Bid</button>
+            <button onclick="fold()">Fold</button>
+            <button onclick="call()">Call</button>
+        </div>
+    </div>
+    <div id = "results">
+        <h5>Everyone had: <p id = "hands"></p></h5>
+        <h5>Winning players: <p id = "winners"></p></h5>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename = 'main.js') }}"></script>
+</body>

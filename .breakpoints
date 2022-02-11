@@ -1,0 +1,32 @@
+{
+  "files": {
+    "main.py": [
+      {
+        "id": "fc995fb7-a307-4ba7-9e7b-e3dacdec19fc",
+        "line": 10,
+        "version": 14411,
+        "index": 269
+      },
+      {
+        "id": "128e91ce-0784-4524-a8c0-f5f1cd79e90b",
+        "line": 132,
+        "version": 14411,
+        "index": 4195
+      },
+      {
+        "id": "5e2ae469-3d9e-4d9d-8517-2c354164f22d",
+        "line": 167,
+        "version": 14411,
+        "index": 5372
+      }
+    ],
+    "static/main.css": [
+      {
+        "id": "f269aa80-03ce-4fc3-abc8-5e815b391e34",
+        "line": 19,
+        "version": 515,
+        "index": 287
+      }
+    ]
+  }
+}
