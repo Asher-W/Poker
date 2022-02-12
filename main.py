@@ -80,22 +80,18 @@ def do_turn(action):
         return
 
     room = players[request.sid]
-    ind = rooms[room][5] % rooms[room][4]
-    if request.sid == list(rooms[room][3].keys())[ind]:
+    print(rooms[room][5], rooms[room][3], rooms[room][4])
+    if request.sid == list(rooms[room][3].keys())[rooms[room][5]]:
+        print(action)
         if action == "fold":
-            emit('player_removed', ind + 1, to=room)
-
-            rooms[room][4] -= 1
-            del rooms[room][3][request.sid]
-            if rooms[room][4] == 1:
-                emit('declare_winner', [1, 'others folded'])
+            rooms[room][3][request.sid][2] = -1
+            remaining = [i[2] for i in rooms[room][3].values()]
+            if remaining.count(-1)==len(remaining)-1:
+                emit('declare_winner', [remaining.index(-1), 'others folded'])
                 rooms[room][6] = 0
                 return
-
-            if rooms[room][5] > 0:
-                rooms[room][5] %= rooms[room][4]
-
-            del rooms[room][3][request.sid]
+            print('folded')
+            inc_id(room)
 
         elif isinstance(action, int):
             rooms[room][6] = 1
@@ -105,25 +101,32 @@ def do_turn(action):
             rooms[room][2] += action
 
             new_pot = rooms[room][2]
-
-            rooms[room][5] = (rooms[room][5] + 1) % rooms[room][4]
             rooms[room][3][request.sid][0] = new_pot
+
+            inc_id(room)
 
             emit('update_pot', new_pot, to=room)
             emit('update_bet', new_pot)
 
-        print(rooms[room][5])
         next_key = list(rooms[room][3].keys())[rooms[room][5]]
         stats = [i[2] for i in rooms[room][3].values()]
-
+        
         if ((stats.count(2) == 1 and rooms[room][3][next_key][2]==2) or stats.count(2) == 0) and 0 not in stats:
             trigger_stage_change(room)
 
         emit('set_turn', rooms[room][5] + 1, to = room)
 
+def inc_id(room):
+    for i in range(rooms[room][4]):
+        rooms[room][5] = (rooms[room][5] + 1) % rooms[room][4]
+        ind = list(rooms[room][3].keys())[rooms[room][5]]
+        if rooms[room][3][ind][2] != -1: 
+            break
+
 def trigger_stage_change(room):
     for i in rooms[room][3].values():
-        i[2] = 0
+        if i[2] > 0:
+            i[2] = 0
     if len(rooms[room][1])<5:
         draw_card(room)
         while len(rooms[room][1]) < 3: 
@@ -134,7 +137,7 @@ def trigger_stage_change(room):
     else:
         emit('show_hands',";".join([str(i[1]) for i in rooms[room][3].values()]), to=room)
 
-        scores = [[i,score_hand(v[1]+rooms[room][1])] for i,v in enumerate(rooms[room][3].values())]
+        scores = [[i,score_hand(v[1]+rooms[room][1])] for i,v in enumerate(rooms[room][3].values()) if v[2]!=-1]
 
         for i in range(6):
             top = -1
@@ -147,7 +150,7 @@ def trigger_stage_change(room):
                     next.append(v)
             scores = next
         
-        emit('declare_winner',[[i[0]+1 for i in scores], ['high', 'pair', 'two pair', '3 of a kind', 'straight', 'flush', 'full house', '4 of a kind', 'straight flush', 'royal flush'][scores[0][1][0]]], to=room)
+        emit('declare_winner',[[[i,v[0]+1] for i,v in enumerate(scores)], ['high', 'pair', 'two pair', '3 of a kind', 'straight', 'flush', 'full house', '4 of a kind', 'straight flush', 'royal flush'][scores[0][1][0]]], to=room)
         emit('declare_scores', to = room)
 
 def score_hand(cards):

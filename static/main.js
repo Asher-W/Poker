@@ -22,17 +22,6 @@ socket.on('set_data', (data)=>{
     document.getElementById('pot').innerHTML = data[2]
     document.getElementById('bet').innerHTML = data[3]
 })
-
-socket.on('player_removed', (num)=>{
-    if (playerNum > num){
-        playerNum -= 1
-        document.getElementById('number').innerHTML = playerNum
-    }
-    else if (playerNum == num){
-        document.getElementById('number').innerHTML = "folded (out)"
-        playerNum = -1
-    }
-})
 socket.on('set_turn', (num)=>{
     document.getElementById('current').innerHTML = num
 })
@@ -50,7 +39,11 @@ socket.on('set_deal', (deal)=>{
 })
 
 socket.on('declare_winner', (win_data)=>{
-    document.getElementById('winners').innerHTML = win_data[0] + '(' + win_data[1] + ')'
+    let newstr = ''
+    for(let i of win_data[0]){
+        newstr += i[0]+':'+i[1]+';'
+    }
+    document.getElementById('winners').innerHTML = newstr + '(' + win_data[1] + ')'
 
 })
 
