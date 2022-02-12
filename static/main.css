@@ -2,7 +2,7 @@ body {
     font-family: 'Courier New', Courier, monospace;
 }
 p {
-    display: inline;
+    display: inline-block;
 }
 #results {
     display: none;
