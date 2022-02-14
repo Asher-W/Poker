@@ -9,47 +9,48 @@ socketio = SocketIO(app, async_mode=async_mode)
 
 players = defaultdict(lambda: '') # room id
 buy_in = 2
-rooms = defaultdict(lambda: [get_deck(),[],buy_in,defaultdict(lambda:[buy_in,[],0]),0,0,-1]) # deck, table cards, pot, players (current bet, hand, raised), player count, turn index, running
+rooms = defaultdict(lambda: [get_deck(),[],buy_in,0,defaultdict(lambda:[buy_in,[],0]),0,0,-1]) # deck, table cards, current bet, pot, players (current bet, hand, raised), player count, turn index, running
+
+## add pot ##
 
 @app.route("/<int:room>", methods = ['POST','GET'])
 def room(room):
     room = str(room)
-    if rooms[room][4] < 10 and rooms[room][6] == -1:
-        rooms[room][4]+=1
+    if rooms[room][5] < 10 and rooms[room][7] == -1:
+        rooms[room][5]+=1
         return render_template('index.html')
     else: return render_template('roomfull.html')
 
 @socketio.event
 def join():
     room = request.headers['Referer'].split('/')[-1]
-    rooms[room][3][request.sid]
+    rooms[room][4][request.sid]
     players[request.sid] = room
+    rooms[room][3] += rooms[room][4][request.sid][0]
     
     join_room(room)
-    emit('set_data', [draw_hand(room,request.sid), list(rooms[room][3].keys()).index(request.sid) + 1, rooms[room][2], rooms[room][2]])
+    emit('set_data', [draw_hand(room,request.sid), list(rooms[room][4].keys()).index(request.sid) + 1, rooms[room][2], rooms[room][3], rooms[room][4][request.sid][0]])
 
 @socketio.on('disconnect')
 def leave():
     if request.sid in players.keys():
         room = players[request.sid]
-        if room in rooms and request.sid in rooms[room][3]:
-            ind = list(rooms[room][3].keys()).index(request.sid)
+        if room in rooms and request.sid in rooms[room][4]:
+            ind = list(rooms[room][4].keys()).index(request.sid)
 
             emit('player_removed', ind + 1, to=room)
 
-            rooms[room][0] = rooms[room][3][request.sid][1] + rooms[room][0]
+            rooms[room][0] = rooms[room][4][request.sid][1] + rooms[room][0]
 
-            del rooms[room][3][request.sid]
-            rooms[room][4] -= 1
+            del rooms[room][4][request.sid]
+            rooms[room][5] -= 1
 
-            if rooms[room][4] and ind < rooms[room][5] % rooms[room][4]:
-                rooms[room][5] -= 1
-            
-            print(rooms[room][4])
+            if rooms[room][5] and ind < rooms[room][6]:
+                dec_id(room)
 
-            if rooms[room][4] == 1:
-                emit('declare_winner', 1, to = room)
-        if rooms[room][4] <= 0:
+            if rooms[room][5] == 1:
+                emit('declare_winner', [1, 'no competitors'], to = room)
+        if rooms[room][5] <= 0:
             del rooms[room]
 
         leave_room(room)
@@ -69,75 +70,84 @@ def draw_hand(room, player):
     for i in range(2):
         hand.append(rooms[room][0].pop())
 
-    rooms[room][3][player][1] = hand
+    rooms[room][4][player][1] = hand
     return hand
 
 @socketio.event
 def do_turn(action):
-    if request.sid not in players or players[request.sid] not in rooms or request.sid not in rooms[players[request.sid]][3] or len(rooms[players[request.sid]][3]) < 2: 
+    print('received', action)
+    if request.sid not in players or players[request.sid] not in rooms or request.sid not in rooms[players[request.sid]][4] or len(rooms[players[request.sid]][4]) < 2: 
         return
-    if rooms[players[request.sid]][6] == 0: 
+    if rooms[players[request.sid]][7] == 0: 
         return
 
     room = players[request.sid]
-    print(rooms[room][5], rooms[room][3], rooms[room][4])
-    if request.sid == list(rooms[room][3].keys())[rooms[room][5]]:
-        print(action)
+    if request.sid == list(rooms[room][4].keys())[rooms[room][6]]:
         if action == "fold":
-            rooms[room][3][request.sid][2] = -1
-            remaining = [i[2] for i in rooms[room][3].values()]
+            rooms[room][4][request.sid][2] = -1
+            remaining = [i[2] for i in rooms[room][4].values()]
             if remaining.count(-1)==len(remaining)-1:
                 emit('declare_winner', [remaining.index(-1), 'others folded'])
-                rooms[room][6] = 0
+                rooms[room][7] = 0
                 return
-            print('folded')
             inc_id(room)
 
         elif isinstance(action, int):
-            rooms[room][6] = 1
+            rooms[room][7] = 1
             action = max(0,int(action))
         
-            rooms[room][3][request.sid][2] = bool(action)+1
+            rooms[room][4][request.sid][2] = bool(action) + 1
+            rooms[room][3] += action
             rooms[room][2] += action
 
-            new_pot = rooms[room][2]
-            rooms[room][3][request.sid][0] = new_pot
+            new_pot = rooms[room][3]
+            rooms[room][4][request.sid][0] = new_pot
+
 
             inc_id(room)
 
-            emit('update_pot', new_pot, to=room)
+            emit('update_cur_amount', new_pot, to=room)
+            emit('update_pot', rooms[room][3], to=room)
             emit('update_bet', new_pot)
+        else:
+            return
 
-        next_key = list(rooms[room][3].keys())[rooms[room][5]]
-        stats = [i[2] for i in rooms[room][3].values()]
+        next_key = list(rooms[room][4].keys())[rooms[room][6]]
+        stats = [i[2] for i in rooms[room][4].values()]
         
-        if ((stats.count(2) == 1 and rooms[room][3][next_key][2]==2) or stats.count(2) == 0) and 0 not in stats:
+        if ((stats.count(2) == 1 and rooms[room][4][next_key][2]==2) or stats.count(2) == 0) and 0 not in stats:
             trigger_stage_change(room)
 
-        emit('set_turn', rooms[room][5] + 1, to = room)
+        emit('set_turn', rooms[room][6] + 1, to = room)
 
 def inc_id(room):
-    for i in range(rooms[room][4]):
-        rooms[room][5] = (rooms[room][5] + 1) % rooms[room][4]
-        ind = list(rooms[room][3].keys())[rooms[room][5]]
-        if rooms[room][3][ind][2] != -1: 
+    for i in range(rooms[room][5]):
+        rooms[room][5] = (rooms[room][6] + 1) % rooms[room][5]
+        ind = list(rooms[room][4].keys())[rooms[room][6]]
+        if rooms[room][4][ind][2] != -1: 
             break
+def dec_id(room):
+    for i in range(rooms[room][5]):
+        rooms[room][5] = (rooms[room][6] - 1) % rooms[room][5]
+        ind = list(rooms[room][4].keys())[rooms[room][6]]
+        if rooms[room][4][ind][2] != -1: 
+            break   
 
 def trigger_stage_change(room):
-    for i in rooms[room][3].values():
+    for i in rooms[room][4].values():
         if i[2] > 0:
             i[2] = 0
-    if len(rooms[room][1])<5:
+    if len(rooms[room][2])<5:
         draw_card(room)
-        while len(rooms[room][1]) < 3: 
+        while len(rooms[room][2]) < 3: 
             draw_card(room)
         
-        emit('set_deal', rooms[room][1], to=room)
+        emit('set_deal', rooms[room][2], to=room)
 
     else:
-        emit('show_hands',";".join([str(i[1]) for i in rooms[room][3].values()]), to=room)
+        emit('show_hands',";".join([str(i[1]) for i in rooms[room][4].values()]), to=room)
 
-        scores = [[i,score_hand(v[1]+rooms[room][1])] for i,v in enumerate(rooms[room][3].values()) if v[2]!=-1]
+        scores = [[i,score_hand(v[1]+rooms[room][1])] for i,v in enumerate(rooms[room][4].values()) if v[2]!=-1]
 
         for i in range(6):
             top = -1
