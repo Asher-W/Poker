@@ -9,17 +9,19 @@
 <body>
     <h5>It is player <p id = "current">1</p>'s turn</h5>
     <hr>
-    <h5>you are player <p id = "number"></p></h5>
-    <h5>You have: <p id = "hand"></p></h5>
+    <h5>you are player <p id = "number">Loading...</p></h5>
+    <h5>You have: <p id = "hand">Loading...</p></h5>
+    <h5>You can bet up to: <p id = "total_amount">Loading...</p></h5>
     <hr>
     <h5>Board: <p id="board"></p></h5>
-    <h5>The current bet is: <p id = "cur_amount"></p></h5>
-    <h5>Your last bet was: <p id = "bet"></p></h5>
-    <h5>The pot is: <p id = "pot"></p></h5>
+    <h5>The current bet is: <p id = "cur_amount">Loading...</p></h5>
+    <h5>Your last bet was: <p id = "bet">Loading...</p></h5>
+    <h5>The pot is: <p id = "pot">Loading...</p></h5>
     <div id = "action">
         <input type = "number" min = "0" value="0" id = "RaiseAmount">
         <div id = "buttons">
             <button onclick="sendUpdate()">Raise Bid</button>
+            <button onclick="allIn()">ALL IN</button>
             <button onclick="fold()">Fold</button>
             <button onclick="call()">Call</button>
         </div>

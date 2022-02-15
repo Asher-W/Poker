@@ -14,18 +14,24 @@ function fold(){
 function call(){
     socket.emit('do_turn', 0)
 }
+function allIn(){
+    socket.emit('do_turn', 'all_in')
+}
 socket.on('player_removed', (num)=>{
     console.log(num)
     if (num < playerNum){playerNum--}
     document.getElementById('number').innerHTML = playerNum
 })
+socket.on('update_total', (data)=>{
+    document.getElementById('total_amount').innerHTML = data
+})
 socket.on('set_data', (data)=>{
     playerNum = data[1]
     document.getElementById('hand').innerHTML = data[0]
     document.getElementById('number').innerHTML = playerNum
+    document.getElementById('total_amount').innerHTML = data[4]
     document.getElementById('cur_amount').innerHTML = data[2]
-    document.getElementById('pot').innerHTML = data[3]
-    document.getElementById('bet').innerHTML = data[4]
+    document.getElementById('bet').innerHTML = data[3]
 })
 socket.on('set_turn', (num)=>{
     document.getElementById('current').innerHTML = num
